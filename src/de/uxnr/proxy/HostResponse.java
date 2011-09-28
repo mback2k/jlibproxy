@@ -54,8 +54,10 @@ public class HostResponse {
 		OutputStream localOutput = this.httpExchange.getResponseBody();
 		ByteArrayOutputStream bufferOutput = new ByteArrayOutputStream();
 		
+		int size = Math.max(Math.min(remoteInput.available(), 65536), 1024);
 		int length = -1;
-		byte[] data = new byte[1024];
+		
+		byte[] data = new byte[size];
 		while ((length = remoteInput.read(data)) != -1) {
 			localOutput.write(data, 0, length);
 			bufferOutput.write(data, 0, length);

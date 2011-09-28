@@ -50,8 +50,10 @@ public class HostRequest {
 			InputStream localInput = this.httpExchange.getRequestBody();
 			OutputStream remoteOutput = this.connection.getOutputStream();
 			
+			int size = Math.max(Math.min(localInput.available(), 65536), 1024);
 			int length = -1;
-			byte[] data = new byte[1024];
+			
+			byte[] data = new byte[size];
 			while ((length = localInput.read(data)) != -1) {
 				remoteOutput.write(data, 0, length);
 				bufferOutput.write(data, 0, length);
