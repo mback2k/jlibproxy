@@ -31,7 +31,6 @@ public class ProxyHandler implements HttpHandler {
 		}
 		
 		String host = requestURI.getHost();
-		System.out.println(requestURI);
 		
 		HostHandler hostHandler = null;
 		for (Entry<String, HostHandler> handler : this.hostHandlers.entrySet()) {
