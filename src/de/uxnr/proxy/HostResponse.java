@@ -78,7 +78,7 @@ public class HostResponse {
 			Map<String, String> response = new HashMap<String, String>();
 			for (String header : remoteHeaders.keySet()) {
 				if (header != null) {
-					response.put(header, remoteHeaders.get(header).get(0));
+					response.put(header.toLowerCase(), remoteHeaders.get(header).get(0));
 				}
 			}
 			this.hostHandler.handleResponse(requestMethod, requestURI, headers, response, body);
