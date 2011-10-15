@@ -17,7 +17,7 @@ public class ProxyHandler implements HttpHandler {
 	private final Map<String, HostHandler> hostHandlers = new HashMap<String, HostHandler>();
 
 	@Override
-	public synchronized void handle(HttpExchange httpExchange) throws IOException {
+	public void handle(HttpExchange httpExchange) throws IOException {
 		URI requestURI = httpExchange.getRequestURI();
 
 		URL url = requestURI.toURL();
