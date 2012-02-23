@@ -53,6 +53,14 @@ public class Proxy implements Runnable {
 		this.handler.removeHostHandler(host);
 	}
 
+	public void addHostRewriter(String host, HostRewriter hostRewriter) {
+		this.handler.addHostRewriter(host, hostRewriter);
+	}
+
+	public void removeHostRewriter(String host) {
+		this.handler.removeHostRewriter(host);
+	}
+
 	@Override
 	public void run() {
 		this.start();

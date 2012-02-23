@@ -2,7 +2,7 @@ package de.uxnr.proxy;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
@@ -15,12 +15,25 @@ import com.sun.net.httpserver.HttpHandler;
 @SuppressWarnings("restriction")
 public class ProxyHandler implements HttpHandler {
 	private final Map<String, HostHandler> hostHandlers = new HashMap<String, HostHandler>();
+	private final Map<String, HostRewriter> hostRewriters = new HashMap<String, HostRewriter>();
 
 	@Override
 	public void handle(HttpExchange httpExchange) throws IOException {
-		URI requestURI = httpExchange.getRequestURI();
+		Request request = new Request(httpExchange);
+		String host = request.requestURI.getHost();
 
-		URL url = requestURI.toURL();
+		HostHandler hostHandler = this.findHostHandler(host);
+		HostRewriter hostRewriter = this.findHostRewriter(host);
+
+		if (hostRewriter != null) {
+			try {
+				HostRequest.rewriteRequest(request, hostRewriter);
+			} catch (URISyntaxException e) {
+				throw new IOException("Unable to rewrite request URI", e);
+			}
+		}
+
+		URL url = request.requestURI.toURL();
 		URLConnection conn = url.openConnection();
 
 		HttpURLConnection connection = null;
@@ -30,27 +43,56 @@ public class ProxyHandler implements HttpHandler {
 			throw new IOException("Unsupported non-HTTP connection");
 		}
 
-		String host = requestURI.getHost();
+		byte[] requestBody = HostRequest.processRequest(httpExchange, connection, request);
 
-		HostHandler hostHandler = null;
-		for (Entry<String, HostHandler> handler : this.hostHandlers.entrySet()) {
-			if (host.matches(handler.getKey())) {
-				try {
-					hostHandler = handler.getValue().getClass().newInstance();
-				} catch (Exception e) {
-					hostHandler = null;
-				}
-				break;
+		if (hostHandler != null) {
+			HostRequest.handleRequest(request, hostHandler, requestBody);
+		}
+
+		Response response = new Response(httpExchange);
+		response.populate(connection.getHeaderFields());
+
+		if (hostRewriter != null) {
+			try {
+				HostResponse.rewriteResponse(response, hostRewriter);
+			} catch (URISyntaxException e) {
+				throw new IOException("Unable to rewrite request URI", e);
 			}
 		}
 
-		HostRequest hostRequest = new HostRequest(httpExchange, connection, hostHandler);
-		hostRequest.process();
+		byte[] responseBody = HostResponse.processResponse(httpExchange, connection, response);
 
-		HostResponse hostResponse = new HostResponse(httpExchange, connection, hostHandler);
-		hostResponse.process();
+		if (hostHandler != null) {
+			HostResponse.handleResponse(response, hostHandler, responseBody);
+		}
 
 		httpExchange.close();
+	}
+
+	private synchronized HostHandler findHostHandler(String host) {
+		for (Entry<String, HostHandler> handler : this.hostHandlers.entrySet()) {
+			if (host.matches(handler.getKey())) {
+				try {
+					return handler.getValue().getClass().newInstance();
+				} catch (Exception e) {
+					return null;
+				}
+			}
+		}
+		return null;
+	}
+
+	private synchronized HostRewriter findHostRewriter(String host) {
+		for (Entry<String, HostRewriter> rewriter : this.hostRewriters.entrySet()) {
+			if (host.matches(rewriter.getKey())) {
+				try {
+					return rewriter.getValue().getClass().newInstance();
+				} catch (Exception e) {
+					return null;
+				}
+			}
+		}
+		return null;
 	}
 
 	protected synchronized void addHostHandler(String host, HostHandler hostHandler) {
@@ -59,5 +101,13 @@ public class ProxyHandler implements HttpHandler {
 
 	protected synchronized void removeHostHandler(String host) {
 		this.hostHandlers.remove(host);
+	}
+
+	protected synchronized void addHostRewriter(String host, HostRewriter hostRewriter) {
+		this.hostRewriters.put(host, hostRewriter);
+	}
+
+	protected synchronized void removeHostRewriter(String host) {
+		this.hostRewriters.remove(host);
 	}
 }

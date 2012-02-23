@@ -7,48 +7,49 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
+import java.net.URISyntaxException;
 
-import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 
 @SuppressWarnings("restriction")
 public class HostRequest {
-	private final HttpExchange httpExchange;
-	private final HttpURLConnection connection;
-	private final HostHandler hostHandler;
+	protected static void rewriteRequest(Request request, HostRewriter hostRewriter) throws IOException, URISyntaxException {
+		StringBuilder requestMethod_SB = new StringBuilder(request.requestMethod);
+		StringBuilder requestURI_SB = new StringBuilder(request.requestURI.toString());
 
-	protected HostRequest(HttpExchange httpExchange, HttpURLConnection connection, HostHandler hostHandler) {
-		this.httpExchange = httpExchange;
-		this.connection = connection;
-		this.hostHandler = hostHandler;
+		hostRewriter.rewriteRequest(requestMethod_SB, requestURI_SB, new Headers(request.requestHeaders));
+
+		request.requestURI = new URI(requestURI_SB.toString());
+		request.requestMethod = requestMethod_SB.toString();
 	}
 
-	public void process() throws IOException {
-		String requestMethod = this.httpExchange.getRequestMethod();
-		URI requestURI = this.httpExchange.getRequestURI();
-		Headers requestHeaders = this.httpExchange.getRequestHeaders();
-
-		for (String header : requestHeaders.keySet()) {
+	protected static byte[] processRequest(HttpExchange httpExchange, HttpURLConnection connection, Request request) throws IOException {
+		for (String header : request.requestHeaders.keySet()) {
 			if (header != null && !header.toLowerCase().startsWith("proxy-")) {
-				this.connection.setRequestProperty(header, requestHeaders.getFirst(header));
+				StringBuilder props = new StringBuilder();
+				for (String prop : request.requestHeaders.get(header)) {
+					if (props.length() > 0) {
+						props.append("; ");
+					}
+					props.append(prop);
+				}
+				connection.setRequestProperty(header, props.toString());
 			}
 		}
 
-		this.connection.setRequestMethod(requestMethod);
-		this.connection.setDefaultUseCaches(false);
-		this.connection.setInstanceFollowRedirects(false);
-		this.connection.setDoInput(true);
+		connection.setRequestMethod(request.requestMethod);
+		connection.setDefaultUseCaches(false);
+		connection.setInstanceFollowRedirects(false);
+		connection.setDoInput(true);
 
 		ByteArrayOutputStream bufferOutput = new ByteArrayOutputStream();
 
-		if (requestMethod.equalsIgnoreCase("POST")) {
-			this.connection.setDoOutput(true);
-			this.connection.connect();
+		if (request.requestMethod.equalsIgnoreCase("POST")) {
+			connection.setDoOutput(true);
+			connection.connect();
 
-			InputStream localInput = this.httpExchange.getRequestBody();
-			OutputStream remoteOutput = this.connection.getOutputStream();
+			InputStream localInput = httpExchange.getRequestBody();
+			OutputStream remoteOutput = connection.getOutputStream();
 
 			int size = Math.max(Math.min(localInput.available(), 65536), 1024);
 			int length = -1;
@@ -62,20 +63,17 @@ public class HostRequest {
 			remoteOutput.close();
 			bufferOutput.close();
 		} else {
-			this.connection.connect();
+			connection.connect();
 		}
 
-		if (this.hostHandler != null) {
-			ByteArrayInputStream body = new ByteArrayInputStream(bufferOutput.toByteArray());
+		return bufferOutput.toByteArray();
+	}
 
-			Map<String, String> headers = new HashMap<String, String>();
-			for (String header : requestHeaders.keySet()) {
-				if (header != null) {
-					headers.put(header.toLowerCase(), requestHeaders.getFirst(header));
-				}
-			}
+	protected static void handleRequest(Request request, HostHandler hostHandler, byte[] body) throws IOException {
+		ByteArrayInputStream bufferInput = new ByteArrayInputStream(body);
 
-			this.hostHandler.handleRequest(requestMethod, requestURI, headers, body);
-		}
+		hostHandler.handleRequest(request.requestMethod, request.requestURI, new Headers(request.requestHeaders), bufferInput);
+
+		bufferInput.close();
 	}
 }

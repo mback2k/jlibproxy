@@ -7,51 +7,35 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.net.URISyntaxException;
 
-import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 
 @SuppressWarnings("restriction")
 public class HostResponse {
-	private final HttpExchange httpExchange;
-	private final HttpURLConnection connection;
-	private final HostHandler hostHandler;
+	protected static void rewriteResponse(Response response, HostRewriter hostRewriter) throws IOException, URISyntaxException {
+		StringBuilder requestMethod_SB = new StringBuilder(response.requestMethod);
+		StringBuilder requestURI_SB = new StringBuilder(response.requestURI.toString());
 
-	protected HostResponse(HttpExchange httpExchange, HttpURLConnection connection, HostHandler hostHandler) {
-		this.httpExchange = httpExchange;
-		this.connection = connection;
-		this.hostHandler = hostHandler;
+		hostRewriter.rewriteResponse(requestMethod_SB, requestURI_SB, new Headers(response.requestHeaders), new Headers(response.responseHeaders));
+
+		response.requestURI = new URI(requestURI_SB.toString());
+		response.requestMethod = requestMethod_SB.toString();
 	}
 
-	public void process() throws IOException {
-		String requestMethod = this.httpExchange.getRequestMethod();
-		URI requestURI = this.httpExchange.getRequestURI();
-		Headers requestHeaders = this.httpExchange.getRequestHeaders();
-		Headers responseHeaders = this.httpExchange.getResponseHeaders();
-
-		Map<String, List<String>> remoteHeaders = this.connection.getHeaderFields();
-
-		for (String header : remoteHeaders.keySet()) {
-			if (header != null) {
-				responseHeaders.set(header, remoteHeaders.get(header).get(0));
-			}
-		}
-
-		int responseCode = this.connection.getResponseCode();
-		long contentLength = this.connection.getContentLength();
+	protected static byte[] processResponse(HttpExchange httpExchange, HttpURLConnection connection, Response response) throws IOException {
+		int responseCode = connection.getResponseCode();
+		long contentLength = connection.getContentLength();
 
 		if (contentLength < 0)
 			contentLength = 0;
 		else if (contentLength == 0)
 			contentLength = -1;
 
-		this.httpExchange.sendResponseHeaders(responseCode, contentLength);
+		httpExchange.sendResponseHeaders(responseCode, contentLength);
 
-		InputStream remoteInput = this.connection.getInputStream();
-		OutputStream localOutput = this.httpExchange.getResponseBody();
+		InputStream remoteInput = connection.getInputStream();
+		OutputStream localOutput = httpExchange.getResponseBody();
 		ByteArrayOutputStream bufferOutput = new ByteArrayOutputStream();
 
 		int size = Math.max(Math.min(remoteInput.available(), 65536), 1024);
@@ -67,24 +51,14 @@ public class HostResponse {
 		localOutput.close();
 		bufferOutput.close();
 
-		if (this.hostHandler != null) {
-			ByteArrayInputStream body = new ByteArrayInputStream(bufferOutput.toByteArray());
+		return bufferOutput.toByteArray();
+	}
 
-			Map<String, String> headers = new HashMap<String, String>();
-			for (String header : requestHeaders.keySet()) {
-				if (header != null) {
-					headers.put(header.toLowerCase(), requestHeaders.getFirst(header));
-				}
-			}
+	protected static void handleResponse(Response response, HostHandler hostHandler, byte[] body) throws IOException {
+		ByteArrayInputStream bufferInput = new ByteArrayInputStream(body);
 
-			Map<String, String> response = new HashMap<String, String>();
-			for (String header : remoteHeaders.keySet()) {
-				if (header != null) {
-					response.put(header.toLowerCase(), remoteHeaders.get(header).get(0));
-				}
-			}
+		hostHandler.handleResponse(response.requestMethod, response.requestURI, new Headers(response.requestHeaders), new Headers(response.responseHeaders), bufferInput);
 
-			this.hostHandler.handleResponse(requestMethod, requestURI, headers, response, body);
-		}
+		bufferInput.close();
 	}
 }
