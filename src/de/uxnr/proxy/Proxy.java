@@ -23,14 +23,18 @@ public class Proxy implements Runnable {
 	private final int maxPoolSize = 64;
 	private final int keepAliveTime = 10;
 
-	public Proxy(int port) throws IOException {
+	public Proxy(InetSocketAddress address) throws IOException {
+		this.address = address;
 		this.handler = new ProxyHandler();
-		this.address = new InetSocketAddress("localhost", port);
 		this.queue = new SynchronousQueue<Runnable>();
 		this.executor = new ThreadPoolExecutor(this.poolSize, this.maxPoolSize, this.keepAliveTime, TimeUnit.SECONDS, this.queue);
 		this.server = HttpServer.create(this.address, this.backlog);
 		this.server.createContext("/", this.handler);
 		this.server.setExecutor(this.executor);
+	}
+
+	public Proxy(int port) throws IOException {
+		this(new InetSocketAddress("localhost", port));
 	}
 
 	public void start() {
