@@ -24,14 +24,20 @@ public class HostResponse {
 	}
 
 	protected static byte[] processResponse(HttpExchange httpExchange, HttpURLConnection connection, Response response) throws IOException {
-		int responseCode = connection.getResponseCode();
-		long contentLength = connection.getContentLength();
+		int responseCode = 500;
+		try {
+			responseCode = Integer.parseInt(response.responseHeaders.getFirst(null).split(" ")[1]);
+		} catch (NumberFormatException e) {
+			responseCode = connection.getResponseCode();
+		}
 
+		long contentLength = connection.getContentLength();
 		if (contentLength < 0)
 			contentLength = 0;
 		else if (contentLength == 0)
 			contentLength = -1;
 
+		response.responseHeaders.remove(null);
 		httpExchange.sendResponseHeaders(responseCode, contentLength);
 
 		InputStream remoteInput = connection.getInputStream();
