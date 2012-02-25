@@ -73,7 +73,7 @@ public class ProxyHandler implements HttpHandler {
 		for (Entry<String, HostHandler> handler : this.hostHandlers.entrySet()) {
 			if (host.matches(handler.getKey())) {
 				try {
-					return handler.getValue().getClass().newInstance();
+					return handler.getValue();
 				} catch (Exception e) {
 					return null;
 				}
@@ -86,7 +86,7 @@ public class ProxyHandler implements HttpHandler {
 		for (Entry<String, HostRewriter> rewriter : this.hostRewriters.entrySet()) {
 			if (host.matches(rewriter.getKey())) {
 				try {
-					return rewriter.getValue().getClass().newInstance();
+					return rewriter.getValue();
 				} catch (Exception e) {
 					return null;
 				}
