@@ -8,16 +8,25 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 
 import com.sun.net.httpserver.HttpExchange;
 
 @SuppressWarnings("restriction")
 public class ResponseHandler {
-	protected static void rewriteResponse(Response response, HostRewriter hostRewriter) throws IOException, URISyntaxException {
+	protected static void rewriteResponse(Response response, List<HostRewriter> hostRewriters) throws URISyntaxException {
 		StringBuilder requestMethod_SB = new StringBuilder(response.requestMethod);
 		StringBuilder requestURI_SB = new StringBuilder(response.requestURI.toString());
+		Headers requestHeaders = new Headers(response.requestHeaders);
+		Headers responseHeaders = new Headers(response.responseHeaders);
 
-		hostRewriter.rewriteResponse(requestMethod_SB, requestURI_SB, new Headers(response.requestHeaders), new Headers(response.responseHeaders));
+		for (HostRewriter hostRewriter : hostRewriters) {
+			try {
+				hostRewriter.rewriteResponse(requestMethod_SB, requestURI_SB, requestHeaders, responseHeaders);
+			} catch (IOException e) {
+				continue;
+			}
+		}
 
 		response.requestURI = new URI(requestURI_SB.toString());
 		response.requestMethod = requestMethod_SB.toString();
@@ -60,10 +69,18 @@ public class ResponseHandler {
 		return bufferOutput.toByteArray();
 	}
 
-	protected static void handleResponse(Response response, HostHandler hostHandler, byte[] body) throws IOException {
+	protected static void handleResponse(Response response, List<HostHandler> hostHandlers, byte[] body) throws IOException {
 		ByteArrayInputStream bufferInput = new ByteArrayInputStream(body);
+		Headers requestHeaders = new Headers(response.requestHeaders);
+		Headers responseHeaders = new Headers(response.responseHeaders);
 
-		hostHandler.handleResponse(response.requestMethod, response.requestURI, new Headers(response.requestHeaders), new Headers(response.responseHeaders), bufferInput);
+		for (HostHandler hostHandler : hostHandlers) {
+			try {
+				hostHandler.handleResponse(response.requestMethod, response.requestURI, requestHeaders, responseHeaders, bufferInput);
+			} catch (IOException e) {
+				continue;
+			}
+		}
 
 		bufferInput.close();
 	}

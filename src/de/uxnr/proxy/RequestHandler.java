@@ -8,16 +8,24 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 
 import com.sun.net.httpserver.HttpExchange;
 
 @SuppressWarnings("restriction")
 public class RequestHandler {
-	protected static void rewriteRequest(Request request, HostRewriter hostRewriter) throws IOException, URISyntaxException {
+	protected static void rewriteRequest(Request request, List<HostRewriter> hostRewriters) throws URISyntaxException {
 		StringBuilder requestMethod_SB = new StringBuilder(request.requestMethod);
 		StringBuilder requestURI_SB = new StringBuilder(request.requestURI.toString());
+		Headers requestHeaders = new Headers(request.requestHeaders);
 
-		hostRewriter.rewriteRequest(requestMethod_SB, requestURI_SB, new Headers(request.requestHeaders));
+		for (HostRewriter hostRewriter : hostRewriters) {
+			try {
+				hostRewriter.rewriteRequest(requestMethod_SB, requestURI_SB, requestHeaders);
+			} catch (IOException e) {
+				continue;
+			}
+		}
 
 		request.requestURI = new URI(requestURI_SB.toString());
 		request.requestMethod = requestMethod_SB.toString();
@@ -69,10 +77,17 @@ public class RequestHandler {
 		return bufferOutput.toByteArray();
 	}
 
-	protected static void handleRequest(Request request, HostHandler hostHandler, byte[] body) throws IOException {
+	protected static void handleRequest(Request request, List<HostHandler> hostHandlers, byte[] body) throws IOException {
 		ByteArrayInputStream bufferInput = new ByteArrayInputStream(body);
+		Headers requestHeaders = new Headers(request.requestHeaders);
 
-		hostHandler.handleRequest(request.requestMethod, request.requestURI, new Headers(request.requestHeaders), bufferInput);
+		for (HostHandler hostHandler : hostHandlers) {
+			try {
+				hostHandler.handleRequest(request.requestMethod, request.requestURI, requestHeaders, bufferInput);
+			} catch (IOException e) {
+				continue;
+			}
+		}
 
 		bufferInput.close();
 	}

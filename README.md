@@ -6,9 +6,14 @@ or responses which pass through the proxy.
 
 Features
 --------
-- Listen for requests to a specific host
+- Listen for requests to a specific host or URL
 - Extract the request and response headers
 - Extract the request and response body
+- Rewrite the request and response headers
+
+Dependencies
+------------
+- jlibutils [https://github.com/mback2k/jlibutils]
 
 TODO
 ----
