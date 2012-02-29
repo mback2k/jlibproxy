@@ -12,7 +12,7 @@ import java.net.URISyntaxException;
 import com.sun.net.httpserver.HttpExchange;
 
 @SuppressWarnings("restriction")
-public class HostResponse {
+public class ResponseHandler {
 	protected static void rewriteResponse(Response response, HostRewriter hostRewriter) throws IOException, URISyntaxException {
 		StringBuilder requestMethod_SB = new StringBuilder(response.requestMethod);
 		StringBuilder requestURI_SB = new StringBuilder(response.requestURI.toString());

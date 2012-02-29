@@ -27,7 +27,7 @@ public class ProxyHandler implements HttpHandler {
 
 		if (hostRewriter != null) {
 			try {
-				HostRequest.rewriteRequest(request, hostRewriter);
+				RequestHandler.rewriteRequest(request, hostRewriter);
 			} catch (URISyntaxException e) {
 				throw new IOException("Unable to rewrite request URI", e);
 			}
@@ -43,10 +43,10 @@ public class ProxyHandler implements HttpHandler {
 			throw new IOException("Unsupported non-HTTP connection");
 		}
 
-		byte[] requestBody = HostRequest.processRequest(httpExchange, connection, request);
+		byte[] requestBody = RequestHandler.processRequest(httpExchange, connection, request);
 
 		if (hostHandler != null) {
-			HostRequest.handleRequest(request, hostHandler, requestBody);
+			RequestHandler.handleRequest(request, hostHandler, requestBody);
 		}
 
 		Response response = new Response(httpExchange);
@@ -54,16 +54,16 @@ public class ProxyHandler implements HttpHandler {
 
 		if (hostRewriter != null) {
 			try {
-				HostResponse.rewriteResponse(response, hostRewriter);
+				ResponseHandler.rewriteResponse(response, hostRewriter);
 			} catch (URISyntaxException e) {
 				throw new IOException("Unable to rewrite request URI", e);
 			}
 		}
 
-		byte[] responseBody = HostResponse.processResponse(httpExchange, connection, response);
+		byte[] responseBody = ResponseHandler.processResponse(httpExchange, connection, response);
 
 		if (hostHandler != null) {
-			HostResponse.handleResponse(response, hostHandler, responseBody);
+			ResponseHandler.handleResponse(response, hostHandler, responseBody);
 		}
 
 		httpExchange.close();
