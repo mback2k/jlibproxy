@@ -12,7 +12,7 @@ import java.util.Vector;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
-import de.uxnr.util.ListMap;
+import de.uxnr.proxy.util.ListMap;
 
 @SuppressWarnings("restriction")
 public class ProxyHandler implements HttpHandler {
