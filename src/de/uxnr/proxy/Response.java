@@ -17,7 +17,8 @@ public class Response extends Request {
 	}
 
 	protected void populate(Map<String, List<String>> headers) {
-		// The implementation of putAll would not convert the strings into the correct case
+		// The implementation of putAll would not convert the strings into the
+		// correct case
 		for (Entry<String, List<String>> entry : headers.entrySet()) {
 			String header = entry.getKey();
 			for (String prop : entry.getValue()) {

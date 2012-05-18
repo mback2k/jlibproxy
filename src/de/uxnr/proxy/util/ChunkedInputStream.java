@@ -43,7 +43,8 @@ public class ChunkedInputStream extends InputStream {
 
 	@Override
 	public void close() throws IOException {
-		while (this.read() != -1);
+		while (this.read() != -1)
+			;
 		this.reader.close();
 	}
 }

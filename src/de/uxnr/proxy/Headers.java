@@ -24,7 +24,7 @@ public class Headers implements Map<String, List<String>> {
 	public String getFirst(String key) {
 		return this.headers.getFirst(key);
 	}
-	
+
 	public void set(String key, String value) {
 		this.headers.set(key, value);
 	}
