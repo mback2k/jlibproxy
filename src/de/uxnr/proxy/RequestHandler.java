@@ -12,7 +12,6 @@ import java.util.List;
 
 import com.sun.net.httpserver.HttpExchange;
 
-@SuppressWarnings("restriction")
 public class RequestHandler {
 	protected static void rewriteRequest(Request request, List<HostRewriter> hostRewriters) throws URISyntaxException {
 		StringBuilder requestMethod_SB = new StringBuilder(request.requestMethod);

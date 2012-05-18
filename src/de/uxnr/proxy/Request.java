@@ -5,7 +5,6 @@ import java.net.URI;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 
-@SuppressWarnings("restriction")
 public class Request {
 	protected String requestMethod;
 	protected URI requestURI;

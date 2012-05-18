@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@SuppressWarnings("restriction")
 public class Headers implements Map<String, List<String>> {
 	private final com.sun.net.httpserver.Headers headers;
 

@@ -14,7 +14,6 @@ import com.sun.net.httpserver.HttpHandler;
 
 import de.uxnr.proxy.util.ListMap;
 
-@SuppressWarnings("restriction")
 public class ProxyHandler implements HttpHandler {
 	private final ListMap<String, HostHandler> hostHandlers = new ListMap<String, HostHandler>();
 	private final ListMap<String, HostRewriter> hostRewriters = new ListMap<String, HostRewriter>();

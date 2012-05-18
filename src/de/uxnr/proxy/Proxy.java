@@ -10,7 +10,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.sun.net.httpserver.HttpServer;
 
-@SuppressWarnings("restriction")
 public class Proxy implements Runnable {
 	private final ProxyHandler handler;
 	private final InetSocketAddress address;
