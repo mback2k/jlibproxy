@@ -19,7 +19,7 @@ public class Proxy implements Runnable {
 
 	private final int backlog = 10;
 	private final int poolSize = 2;
-	private final int maxPoolSize = 64;
+	private final int maxPoolSize = 512;
 	private final int keepAliveTime = 10;
 
 	public Proxy(InetSocketAddress address) throws IOException {
