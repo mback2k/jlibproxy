@@ -11,12 +11,8 @@ Features
 - Extract the request and response body
 - Rewrite the request and response headers
 
-Dependencies
-------------
-- jlibutils [https://github.com/mback2k/jlibutils]
-
 TODO
 ----
 - Implement advanced filter chains for listeners
 - Implement HTTP CONNECT passthrough
-- (Optional) Allow modification of requests and responses
+- (Optional) Allow modification of request and response content
